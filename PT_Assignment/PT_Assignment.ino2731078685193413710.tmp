@@ -27,7 +27,9 @@ unsigned int sensor_values[NUM_SENSORS];
 
 void setup()
 {
-    sensor_callibration();
+    // Initialise the reflectance sensors module
+    reflectanceSensors.init();
+
     // Init LED pin to enable it to be turned on later
     pinMode(LED_PIN, OUTPUT);
 
@@ -38,7 +40,7 @@ void setup()
 
 void loop()
 {
-        char inputChar = (char) Serial.read();
+    char inputChar = (char) Serial.read();
         switch (inputChar){
            case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(2); break;
            case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(FORWARD_SPEED); delay(2); break;
@@ -77,31 +79,15 @@ void loop()
       }      
     }
   }
+  
+  /*if (Serial.available()>0) {
+        char inputChar = (char) Serial.read();
+        switch (inputChar){
+           case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(2); break;
+           case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(FORWARD_SPEED); delay(2); break;
+           case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(2); break;
+           case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(0); delay(2); break;
+           case 'q': case 'Q': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(2); break;
+        }
+  }*/
 
-  void manual_control(){}
-  void start_robot(){
-    
-  }
-  void sensor_callibration(){
-   // Initialise the reflectance sensors module
-    reflectanceSensors.init();
- 
-  delay(500);
-  pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH);        // turn on LED to indicate we are in calibration mode
-
- unsigned long startTime = millis();
-  while(millis() - startTime < 10000)   // make the calibration take 10 seconds
-  {
-        //turn left
-        motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-        delay(TURN_DURATION);
-        //turn right
-        motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        delay(TURN_DURATION);
-        reflectanceSensors.calibrate();
-  }
-  motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(2);
-  digitalWrite(13, LOW);         // turn off LED to indicate we are through with calibration 
- }
- 
