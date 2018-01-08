@@ -8,7 +8,7 @@
 #define LED_PIN 13
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  1000 // microseconds
+#define QTR_THRESHOLD  500 // microseconds
 
 // Speed/duration settings
 
