@@ -1,131 +1,150 @@
-import processing.serial.*;
+/* =========================================================
+ * ====                   WARNING                        ===
+ * =========================================================
+ * The code in this tab has been generated from the GUI form
+ * designer and care should be taken when editing this file.
+ * Only add/edit code inside the event handlers i.e. only
+ * use lines between the matching comment tags. e.g.
 
-Serial myPort;  // Create object from Serial class
-
-Button W,A,S,D,Room,Complete,Corridor;
-  
-void setup()
-{
-  // I know that the first port in the serial list on my mac
-  // is Serial.list()[0].
-  // On Windows machines, this generally opens COM1.
-  // Open whatever port is the one you're using.
-  String portName = Serial.list()[0]; //change the 0 to a 1 or 2 etc. to match your port
-  myPort = new Serial(this, portName, 9600);
-    size(400,400); //make our canvas 200 x 200 pixels big
-  W = new Button("W",100,20,75,25);
-  A = new Button("A",25,50,75,25);
-  S = new Button("S",125,50,75,25);
-  D = new Button("D",100,50,75,25);
-}
-
-void draw()
-{
-    background(300);
-
-   W.Draw();
-   A.Draw();
-   S.Draw();
-   D.Draw();
-
-}
-  /*void mousePressed(){
-   if (b.MouseIsOver()){
-   b.Clicked();
-   }
-  }*/
+ void myBtnEvents(GButton button) { //_CODE_:button1:12356:
+     // It is safe to enter your event code here  
+ } //_CODE_:button1:12356:
  
-//button code from tutorial https://hadamlenz.wordpress.com/2014/07/16/building-a-button-in-processing/
-class Button {
-  String label; // button label
-  float x;      // top left corner x position
-  float y;      // top left corner y position
-  float w;      // width of button
-  float h;      // height of button
-  
-  
-  // constructor
-  Button(String labelB, float xpos, float ypos, float widthB, float heightB) {
-    label = labelB;
-    x = xpos;
-    y = ypos;
-    w = widthB;
-    h = heightB;
-    
-  }
-  
-  void Draw() {
-    smooth();
-    fill(255);
-    stroke(0);
-    rect(x, y, w, h, 10);//draws the rectangle, the last param is the round corners
-    fill(0);
-    textSize(24); 
-    text(label, x+w/2-(textWidth(label)/2), y+h/2+(textAscent()/2)); 
-    //all of this just centers the text in the box
-    
-      if (this.MouseIsOver()){
-         if(mousePressed){ myPort.write(EventSelector(label));}}
-      
-  }
-  
-  boolean MouseIsOver() {
-    if (mouseX > x && mouseX < (x + w) && mouseY > y && mouseY < (y + h)) {
-      return true;
-    }
-    return false;
-  }
- 
-  String EventSelector(String button){
-  String output = "";  
-  switch (button){
-            case "W":  output = "W";
-                     break;
-            case "A":  output = "A";
-                     break;
-            case "S":  output = "S";
-                     break;
-            case "D":  output = "D";
-                     break;
-            case "Complete":  output = "C";
-                     break;
-            case "Corridor":  output = "Co";
-                     break;
-            case "Room":  output = "R";
-                     break;        
-                 
-  }
-   return output;
-  }
-  
-}
+ * Do not rename this tab!
+ * =========================================================
+ */
+
+public void button1_click1(GButton source, GEvent event) { //_CODE_:button1:939351:
+  println("button1 - GButton >> GEvent." + event + " @ " + millis());
+
+} //_CODE_:button1:939351:
+
+synchronized public void win_draw1(PApplet appc, GWinData data) { //_CODE_:main:328568:
+  appc.background(230);
+} //_CODE_:main:328568:
+
+public void textarea1_change1(GTextArea source, GEvent event) { //_CODE_:txtIncoming:409478:
+  println("txtIncoming - GTextArea >> GEvent." + myString + " @ " + millis());
+} //_CODE_:txtIncoming:409478:
+
+public void W_click1(GButton source, GEvent event) { //_CODE_:W:256229:
+ myPort.write("W");
+   txtIncoming.appendText("Sent to Robot: " + "Manually moving forward.");
+} //_CODE_:W:256229:
+
+public void A_click1(GButton source, GEvent event) { //_CODE_:A:747617:
+ myPort.write("A");
+  txtIncoming.appendText("Sent to Robot: " + "Manually moving left.");
+} //_CODE_:A:747617:
+
+public void S_click1(GButton source, GEvent event) { //_CODE_:S:290439:
+  myPort.write("S");
+   txtIncoming.appendText("Sent to Robot: " + "Manually moving back.");
+} //_CODE_:S:290439:
+
+public void D_click1(GButton source, GEvent event) { //_CODE_:D:324130:
+ myPort.write("D");
+  txtIncoming.appendText("Sent to Robot: " + "Manually moving right.");
+} //_CODE_:D:324130:
 
 
-/*void update(int x, int y) {
-  if ( overCircle(circleX, circleY, circleSize) ) {
-    circleOver = true;
-    rectOver = false;
-  } else if ( overRect(rectX, rectY, rectSize, rectSize) ) {
-    rectOver = true;
-    circleOver = false;
-  } else {
-    circleOver = rectOver = false;
-  }
+public void btnComplete_click(GButton source, GEvent event) { //_CODE_:btnComplete:200569:
+  myPort.write("C");
+  txtIncoming.appendText("Sent to Robot: " + "Corner Complete.");
+} //_CODE_:btnComplete:200569:
+
+public void btnRoom_click(GButton source, GEvent event) { //_CODE_:btnRoom:583555:
+    myPort.write("R");
+  txtIncoming.appendText("Sent to Robot: " + "Outside Room.");
+} //_CODE_:btnRoom:583555:
+
+public void btnScan_click(GButton source, GEvent event) { //_CODE_:btnScan:446119:
+      myPort.write("S");
+  txtIncoming.appendText("Sent to Robot: " + "Stop Robot.");
+} //_CODE_:btnScan:446119:
+
+public void btnAuto_click(GButton source, GEvent event) { //_CODE_:btnAuto:764531:
+    myPort.write("S");
+  txtIncoming.appendText("Sent to Robot: " + "Auto navigation initiated.");
+} //_CODE_:btnAuto:764531:
+
+public void btnStop_click(GButton source, GEvent event) { //_CODE_:btnStop:521789:
+      myPort.write("S");
+  txtIncoming.appendText("Sent to Robot: " + "Stop Robot.");
+} //_CODE_:btnStop:521789:
+
+
+
+// Create all the GUI controls. 
+// autogenerated do not edit
+public void createGUI(){
+  G4P.messagesEnabled(false);
+  G4P.setGlobalColorScheme(GCScheme.BLUE_SCHEME);
+  G4P.setCursor(ARROW);
+  surface.setTitle("Sketch Window");
+  button1 = new GButton(this, 110, -60, 80, 30);
+  button1.setText("W");
+  button1.addEventHandler(this, "button1_click1");
+  main = GWindow.getWindow(this, "Search and Rescue Robot", 0, 0, 500, 300, JAVA2D);
+  main.noLoop();
+  main.addDrawHandler(this, "win_draw1");
+  txtIncoming = new GTextArea(main, 30, 50, 420, 70, G4P.SCROLLBARS_VERTICAL_ONLY);
+  txtIncoming.setOpaque(true);
+  txtIncoming.addEventHandler(this, "textarea1_change1");
+  W = new GButton(main, 230, 140, 80, 30);
+  W.setText("W");
+  W.addEventHandler(this, "W_click1");
+  A = new GButton(main, 150, 180, 80, 30);
+  A.setText("A");
+  A.addEventHandler(this, "A_click1");
+  S = new GButton(main, 230, 180, 80, 30);
+  S.setText("S");
+  S.addEventHandler(this, "S_click1");
+  D = new GButton(main, 310, 180, 80, 30);
+  D.setText("D");
+  D.addEventHandler(this, "D_click1");
+
+  sketchPad1 = new GSketchPad(main, 210, 120, 80, 60);
+  btnComplete = new GButton(main, 30, 220, 160, 50);
+  btnComplete.setText("Complete");
+  btnComplete.setTextBold();
+  btnComplete.addEventHandler(this, "btnComplete_click");
+  btnRoom = new GButton(main, 330, 220, 140, 50);
+  btnRoom.setText("Room");
+  btnRoom.setTextBold();
+  btnRoom.addEventHandler(this, "btnRoom_click");
+  btnScan = new GButton(main, 220, 220, 80, 50);
+  btnScan.setText("Scan");
+  btnScan.addEventHandler(this, "btnScan_click");
+  btnAuto = new GButton(main, 380, 140, 80, 30);
+  btnAuto.setText("Auto");
+  btnAuto.setLocalColorScheme(GCScheme.GREEN_SCHEME);
+  btnAuto.addEventHandler(this, "btnAuto_click");
+  btnStop = new GButton(main, 60, 140, 80, 30);
+  btnStop.setText("STOP");
+  btnStop.setLocalColorScheme(GCScheme.RED_SCHEME);
+  btnStop.addEventHandler(this, "btnStop_click");
+  label1 = new GLabel(main, 20, 30, 80, 20);
+  label1.setTextAlign(GAlign.CENTER, GAlign.MIDDLE);
+  label1.setText("GUI");
+  label1.setOpaque(false);
+  main.loop();
 }
-boolean overCircle(int x, int y, int diameter) {
-  float disX = x - mouseX;
-  float disY = y - mouseY;
-  if (sqrt(sq(disX) + sq(disY)) < diameter/2 ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-void mousePressed() {
-  if (circleOver) {
-    currentColor = circleColor;
-  }
-  if (rectOver) {
-    currentColor = rectColor;
-  }
-}*/
+
+// Variable declarations 
+// autogenerated do not edit
+GButton button1; 
+GWindow main;
+GTextArea txtIncoming; 
+GButton W; 
+GButton A; 
+GButton S; 
+GButton D; 
+GImageButton imgButton1; 
+GSketchPad sketchPad1; 
+GButton btnComplete; 
+GButton btnRoom; 
+GButton btnScan; 
+GButton btnAuto; 
+GButton btnStop; 
+GLabel label1; 
