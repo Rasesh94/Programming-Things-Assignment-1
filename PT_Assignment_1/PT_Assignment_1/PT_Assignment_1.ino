@@ -43,13 +43,53 @@ LSM303 compass;
 unsigned int sensor_values[NUM_SENSORS];
 bool line_detection();
 
+// Converts x and y components of a vector to a heading in degrees.
+// This function is used instead of LSM303::heading() because we don't
+// want the acceleration of the Zumo to factor spuriously into the
+// tilt compensation that LSM303::heading() performs. This calculation
+// assumes that the Zumo is always level.
+template <typename T> float heading(LSM303::vector<T> v)
+{
+	float x_scaled = 2.0*(float)(v.x - compass.m_min.x) / (compass.m_max.x - compass.m_min.x) - 1.0;
+	float y_scaled = 2.0*(float)(v.y - compass.m_min.y) / (compass.m_max.y - compass.m_min.y) - 1.0;
+
+	float angle = atan2(y_scaled, x_scaled) * 180 / M_PI;
+	if (angle < 0)
+		angle += 360;
+	return angle;
+}
 void setup()
 {
-	LSM303::vector<int16_t> running_min = { 32767, 32767, 32767 }, running_max = { -32767, -32767, -32767 };
-	unsigned char index;
-
+	
 	Serial.begin(9600);
 
+	// Initiate the Wire library and join the I2C bus as a master
+
+
+	Serial.println("Press button for Callibration!");
+	button.waitForButton();
+	initialise_compass();
+
+
+	
+	//sensor_callibration();
+	// Init LED pin to enable it to be turned on later
+	pinMode(LED_PIN, OUTPUT);
+
+	// Set up serial monitor for inital testing purposes
+	//  Serial.println("waiting...");
+
+	//Serial.println("Put zumo at the start, and press button to begin!!");
+//	button.waitForButton();
+	//auto_navigation();
+	//compassTest();
+}
+void initialise_compass() {
+	// The highest possible magnetic value to read in any direction is 2047
+	// The lowest possible magnetic value to read in any direction is -2047
+	LSM303::vector<int16_t> running_min = { 32767, 32767, 32767 }, running_max = { -32767, -32767, -32767 };
+	unsigned char index;
+	Serial.println("Initializing Compass");
 	// Initiate the Wire library and join the I2C bus as a master
 	Wire.begin();
 
@@ -61,18 +101,8 @@ void setup()
 
 	compass.writeReg(LSM303::CRB_REG_M, CRB_REG_M_2_5GAUSS); // +/- 2.5 gauss sensitivity to hopefully avoid overflow problems
 	compass.writeReg(LSM303::CRA_REG_M, CRA_REG_M_220HZ);    // 220 Hz compass update rate
+	motors.setSpeeds(200, -200);
 
-	Serial.begin(9600);
-	Serial.println("Press button for Callibration!");
-	button.waitForButton();
-
-	Serial.println("starting calibration");
-
-	// To calibrate the magnetometer, the Zumo spins to find the max/min
-	// magnetic vectors. This information is used to correct for offsets
-	// in the magnetometer data.
-	motors.setLeftSpeed(SPEED);
-	motors.setRightSpeed(-SPEED);
 	for (index = 0; index < CALIBRATION_SAMPLES; index++)
 	{
 		// Take a reading of the magnetic vector and store it in compass.m
@@ -84,30 +114,18 @@ void setup()
 		running_max.x = max(running_max.x, compass.m.x);
 		running_max.y = max(running_max.y, compass.m.y);
 
-		Serial.println(index);
+		//    Serial.println(index);
 
-		delay(50);
+		delay(25);
 	}
-	motors.setLeftSpeed(0);
-	motors.setRightSpeed(0);
+	motors.setSpeeds(0, 0);
+
 	// Set calibrated values to compass.m_max and compass.m_min
 	compass.m_max.x = running_max.x;
 	compass.m_max.y = running_max.y;
 	compass.m_min.x = running_min.x;
 	compass.m_min.y = running_min.y;
-	//sensor_callibration();
-	// Init LED pin to enable it to be turned on later
-	pinMode(LED_PIN, OUTPUT);
-
-	// Set up serial monitor for inital testing purposes
-	//  Serial.println("waiting...");
-
-	//Serial.println("Put zumo at the start, and press button to begin!!");
-//	button.waitForButton();
-	//auto_navigation();
-	compassTest();
 }
-
 // Average 10 vectors to get a better measurement and help smooth out
 // the motors' magnetic interference.
 float averageHeading()
@@ -126,9 +144,70 @@ float averageHeading()
 	// avg is the average measure of the magnetic vector.
 	return heading(avg);
 }
+
+float relativeHeading(float heading_from, float heading_to)
+{
+	float relative_heading = heading_to - heading_from;
+
+	// constrain to -180 to 180 degree range
+	if (relative_heading > 180)
+		relative_heading -= 360;
+	if (relative_heading < -180)
+		relative_heading += 360;
+
+	return relative_heading;
+}
+
 void compassTest() {
 
-};
+	float heading, relative_heading;
+	int speed,angle;
+	static float target_heading = averageHeading();
+	angle = 90;
+	// Heading is given in degrees away from the magnetic vector, increasing clockwise
+	heading = averageHeading();
+
+	// This gives us the relative heading with respect to the target angle
+	relative_heading = relativeHeading(heading, angle);
+
+	// If the Zumo has turned to the direction it wants to be pointing, go straight and then do another turn
+	if (abs(relative_heading) < DEVIATION_THRESHOLD)
+	{
+	
+		// Turn off motors and wait a short time to reduce interference from motors
+		motors.setSpeeds(0, 0);
+		delay(500);
+
+		// Turn 90 degrees relative to the direction we are pointing.
+		// This will help account for variable magnetic field, as opposed
+		// to using fixed increments of 90 degrees from the initial
+		// heading (which might have been measured in a different magnetic
+		// field than the one the Zumo is experiencing now).
+		// Note: fmod() is floating point modulo
+		target_heading = fmod(averageHeading() + 90, 360);
+	}
+	else
+	{
+		// To avoid overshooting, the closer the Zumo gets to the target
+		// heading, the slower it should turn. Set the motor speeds to a
+		// minimum base amount plus an additional variable amount based
+		// on the heading difference.
+
+		speed = SPEED * relative_heading / 180;
+
+		if (speed < 0)
+			speed -= TURN_BASE_SPEED;
+		else
+			speed += TURN_BASE_SPEED;
+
+		motors.setSpeeds(speed, -speed);
+
+	}
+	motors.setSpeeds(0, 0);
+	delay(500);
+}
+
+
 void loop()
 {
 	/*switch (inputChar)
@@ -220,9 +299,8 @@ void auto_navigation() {
 void outside_room() {
 
 }
-//checks the left wall for a line, will return to were it was
-//returns true if a wall has been detected
-boolean checkLeft()
+
+boolean check_left_door()
 {
 	motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION);
 	if (sensor_values[0] > QTR_THRESHOLD)
@@ -245,18 +323,6 @@ boolean checkLeft()
 	}
 }
 
-//checks the right wall for a line, will return to were it was
-//returns true if a wall has been detected
-boolean checkRight()
-{
-	boolean lineDetected = false;
-	Serial.println("Checking right wall");
-	turn(fmod(averageHeading() + 60, 360));//turn right
-	lineDetected = moveAndReverse();
-	turn(currentForwardHeading);
-	turn(currentForwardHeading);
-	return lineDetected;
-}
 void sensor_callibration() {
 	// Initialise the reflectance sensors module
 	reflectanceSensors.init();

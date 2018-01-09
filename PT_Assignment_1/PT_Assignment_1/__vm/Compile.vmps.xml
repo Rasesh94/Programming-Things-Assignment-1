@@ -9,24 +9,24 @@
       <VCCodeMacros />
     </VCCodeModel>
     <BreakPoints>
-      <BreakPoint Index="1" Name="PT_Assignment_1.ino, line 104" Id="721e4b06-78ad-4537-9df7-a99eb901d9bc" Enabled="1" Message="" MessageTextType="2" PreProcessedMessage="" Condition="" ConditionType="1" CurrentHits="0" File="c:\users\rasesh\google drive\sheffield hallam\programming things\programming-things-assignment-1\pt_assignment_1\pt_assignment_1\pt_assignment_1.ino" FileLine="104" FileColumn="1" FunctionName="manual_control()" FunctionLineOffset="10" FunctionColumnOffset="1" HitCountTarget="1" HitCountType="1" Language="C++" LocationType="3" Tag="&lt;vmbp Id='721e4b06-78ad-4537-9df7-a99eb901d9bc'/&gt;" Type="1" ToString="System.__ComObject" BreakWhenHit="1">
-        <Source>97		while (inputChar != 'C')
-98		{
-99	
-100			if (Serial.available() &gt; 0)
-101			{
-102				inputChar = Serial.read();
-103			}
---&gt;104			switch (inputChar)
-105			{
-106			case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
-107			case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION); break;
-108			case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
-109			case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
-110			case 'c': case 'C': auto_navigation(); break;
-111			}
-112			inputChar = ' '; //reset
-113			motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
+      <BreakPoint Index="1" Name="PT_Assignment_1.ino, line 263" Id="721e4b06-78ad-4537-9df7-a99eb901d9bc" Enabled="1" Message="" MessageTextType="2" PreProcessedMessage="" Condition="" ConditionType="1" CurrentHits="0" File="c:\users\rasesh\google drive\sheffield hallam\programming things\programming-things-assignment-1\pt_assignment_1\pt_assignment_1\pt_assignment_1.ino" FileLine="263" FileColumn="1" FunctionName="manual_control()" FunctionLineOffset="10" FunctionColumnOffset="1" HitCountTarget="1" HitCountType="1" Language="C++" LocationType="3" Tag="&lt;vmbp Id='721e4b06-78ad-4537-9df7-a99eb901d9bc'/&gt;" Type="1" ToString="System.__ComObject" BreakWhenHit="1">
+        <Source>256		while (inputChar != 'C')
+257		{
+258	
+259			if (Serial.available() &gt; 0)
+260			{
+261				inputChar = Serial.read();
+262			}
+--&gt;263			switch (inputChar)
+264			{
+265			case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
+266			case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION); break;
+267			case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
+268			case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
+269			case 'c': case 'C': auto_navigation(); break;
+270			}
+271			inputChar = ' '; //reset
+272			motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
 </Source>
       </BreakPoint>
     </BreakPoints>
