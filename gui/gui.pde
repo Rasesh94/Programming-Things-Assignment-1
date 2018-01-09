@@ -1,16 +1,8 @@
 import processing.serial.*;
-Serial myPort;  // Create object from Serial class
-String val;     // Data received from the serial port
-int rectX, rectY;      // Position of square button
-int circleX, circleY;  // Position of circle button
-int rectSize = 90;     // Diameter of rect
-int circleSize = 93;   // Diameter of circle
-color rectColor, circleColor, baseColor;
-color rectHighlight, circleHighlight;
-color currentColor;
-boolean rectOver = false;
-boolean circleOver = false;
 
+Serial myPort;  // Create object from Serial class
+
+Button W,A,S,D,Room,Complete,Corridor;
   
 void setup()
 {
@@ -21,56 +13,95 @@ void setup()
   String portName = Serial.list()[0]; //change the 0 to a 1 or 2 etc. to match your port
   myPort = new Serial(this, portName, 9600);
     size(400,400); //make our canvas 200 x 200 pixels big
-
+  W = new Button("W",100,20,75,25);
+  A = new Button("A",25,50,75,25);
+  S = new Button("S",125,50,75,25);
+  D = new Button("D",100,50,75,25);
 }
 
 void draw()
 {
     background(300);
-  if (mousePressed == true) 
-  {                           //if we clicked in the window
-   myPort.write('1');         //send a 1
-   println("1");   
-  } else 
-  {                           //otherwise
-  myPort.write('0');          //send a 0
-  }   
-  
+
+   W.Draw();
+   A.Draw();
+   S.Draw();
+   D.Draw();
+
 }
-
-
-class Rectangle {
+  /*void mousePressed(){
+   if (b.MouseIsOver()){
+   b.Clicked();
+   }
+  }*/
+ 
+//button code from tutorial https://hadamlenz.wordpress.com/2014/07/16/building-a-button-in-processing/
+class Button {
+  String label; // button label
+  float x;      // top left corner x position
+  float y;      // top left corner y position
+  float w;      // width of button
+  float h;      // height of button
   
-int rectX, rectY, rectSize;
-String text;
-
-rectSize = 20;
-
+  
   // constructor
-  Rectangle(String textt, int x, int y) {
-    rectX = x;
-    rectY = y;
-    text = textt;  
+  Button(String labelB, float xpos, float ypos, float widthB, float heightB) {
+    label = labelB;
+    x = xpos;
+    y = ypos;
+    w = widthB;
+    h = heightB;
+    
   }
-    boolean overRect(int x, int y, int width, int height)  {
-  if (mouseX >= x && mouseX <= x+width && 
-      mouseY >= y && mouseY <= y+height) {
-    return true;
-  } else {
+  
+  void Draw() {
+    smooth();
+    fill(255);
+    stroke(0);
+    rect(x, y, w, h, 10);//draws the rectangle, the last param is the round corners
+    fill(0);
+    textSize(24); 
+    text(label, x+w/2-(textWidth(label)/2), y+h/2+(textAscent()/2)); 
+    //all of this just centers the text in the box
+    
+      if (this.MouseIsOver()){
+         if(mousePressed){ myPort.write(EventSelector(label));}}
+      
+  }
+  
+  boolean MouseIsOver() {
+    if (mouseX > x && mouseX < (x + w) && mouseY > y && mouseY < (y + h)) {
+      return true;
+    }
     return false;
   }
-    }
-    
-   void update(int x, int y) {
- if ( overRect(rectX, rectY, rectSize, rectSize) ) {
-    myPort.write(text);
-    whichKey = "STOP";
+ 
+  String EventSelector(String button){
+  String output = "";  
+  switch (button){
+            case "W":  output = "W";
+                     break;
+            case "A":  output = "A";
+                     break;
+            case "S":  output = "S";
+                     break;
+            case "D":  output = "D";
+                     break;
+            case "Complete":  output = "C";
+                     break;
+            case "Corridor":  output = "Co";
+                     break;
+            case "Room":  output = "R";
+                     break;        
+                 
   }
+   return output;
+  }
+  
 }
 
 
-
-void update(int x, int y) {
+/*void update(int x, int y) {
   if ( overCircle(circleX, circleY, circleSize) ) {
     circleOver = true;
     rectOver = false;
@@ -97,5 +128,4 @@ void mousePressed() {
   if (rectOver) {
     currentColor = rectColor;
   }
-}
-  
+}*/
