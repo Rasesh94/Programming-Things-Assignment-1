@@ -1,3 +1,8 @@
+/*
+ Name:		PT_Assignment_1.ino
+ Created:	1/7/2018 4:53:00 PM
+ Author:	Rasesh
+*/
 #include <ZumoMotors.h>
 #include <Servo.h>
 #include <QTRSensors.h>
@@ -32,15 +37,15 @@ void setup()
 	Serial.begin(9600);
 	Serial.println("Press button for Callibration!");
 	button.waitForButton();
-	sensor_callibration();
+	//sensor_callibration();
 	// Init LED pin to enable it to be turned on later
 	pinMode(LED_PIN, OUTPUT);
 
 	// Set up serial monitor for inital testing purposes
 	//  Serial.println("waiting...");
 
-	Serial.println("Put zumo at the start, and press button to begin!!");
-	button.waitForButton();
+	//Serial.println("Put zumo at the start, and press button to begin!!");
+//	button.waitForButton();
 	auto_navigation();
 }
 
@@ -102,26 +107,37 @@ void manual_control()
 		case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION); break;
 		case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
 		case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
-		case 'q': case 'Q': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
+		case 'c': case 'C': auto_navigation(); break;
 		}
 		inputChar = ' '; //reset
 		motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
 	}
-	if (inputChar == 'C') {
-		auto_navigation();
-	}
+	/*if (inputChar == 'C') {
+	auto_navigation();
+	}*/
 }
 
 void auto_navigation() {
 	Serial.println("Automatic navigation started.");
-
+	char inputChar;
 	while (!line_detection()) {
 		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		if (Serial.available() > 0)
+		{
+			inputChar = Serial.read();
+		}
+		switch (inputChar)
+		{
+		case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
+		case 'r': case 'R': outside_room(); break;
+		case 'c': case 'C': auto_navigation(); break;
+		inputChar = ' '; //reset
+		}
 	}
 	Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
 	manual_control();
-
 }
+
 void sensor_callibration() {
 	// Initialise the reflectance sensors module
 	reflectanceSensors.init();
