@@ -1,3 +1,4 @@
+
 /* =========================================================
  * ====                   WARNING                        ===
  * =========================================================
@@ -69,7 +70,7 @@ public void btnAuto_click(GButton source, GEvent event) { //_CODE_:btnAuto:76453
 } //_CODE_:btnAuto:764531:
 
 public void btnStop_click(GButton source, GEvent event) { //_CODE_:btnStop:521789:
-      myPort.write("S");
+      myPort.write("stop");
   txtIncoming.appendText("Sent to Robot: " + "Stop Robot.");
 } //_CODE_:btnStop:521789:
 
