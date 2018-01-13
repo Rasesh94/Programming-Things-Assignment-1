@@ -1,4 +1,3 @@
-
 /* =========================================================
  * ====                   WARNING                        ===
  * =========================================================
@@ -48,7 +47,6 @@ public void D_click1(GButton source, GEvent event) { //_CODE_:D:324130:
   txtIncoming.appendText("Sent to Robot: " + "Manually moving right.");
 } //_CODE_:D:324130:
 
-
 public void btnComplete_click(GButton source, GEvent event) { //_CODE_:btnComplete:200569:
   myPort.write("C");
   txtIncoming.appendText("Sent to Robot: " + "Corner Complete.");
@@ -60,7 +58,7 @@ public void btnRoom_click(GButton source, GEvent event) { //_CODE_:btnRoom:58355
 } //_CODE_:btnRoom:583555:
 
 public void btnScan_click(GButton source, GEvent event) { //_CODE_:btnScan:446119:
-      myPort.write("S");
+      myPort.write("STOP");
   txtIncoming.appendText("Sent to Robot: " + "Stop Robot.");
 } //_CODE_:btnScan:446119:
 
@@ -73,6 +71,18 @@ public void btnStop_click(GButton source, GEvent event) { //_CODE_:btnStop:52178
       myPort.write("stop");
   txtIncoming.appendText("Sent to Robot: " + "Stop Robot.");
 } //_CODE_:btnStop:521789:
+
+public void button2_click1(GButton source, GEvent event) { //_CODE_:button2:560600:
+  println("button2 - GButton >> GEvent." + event + " @ " + millis());
+} //_CODE_:button2:560600:
+
+public void btnLeft(GButton source, GEvent event) { //_CODE_:btnRight:203449:
+  println("btnRight - GButton >> GEvent." + event + " @ " + millis());
+} //_CODE_:btnRight:203449:
+
+public void textarea1_change2(GTextArea source, GEvent event) { //_CODE_:txtCurrentLocation:331829:
+  println("txtCurrentLocation - GTextArea >> GEvent." + event + " @ " + millis());
+} //_CODE_:txtCurrentLocation:331829:
 
 
 
@@ -89,10 +99,10 @@ public void createGUI(){
   main = GWindow.getWindow(this, "Search and Rescue Robot", 0, 0, 500, 300, JAVA2D);
   main.noLoop();
   main.addDrawHandler(this, "win_draw1");
-  txtIncoming = new GTextArea(main, 30, 50, 420, 70, G4P.SCROLLBARS_VERTICAL_ONLY);
+  txtIncoming = new GTextArea(main, 33, 47, 434, 70, G4P.SCROLLBARS_VERTICAL_ONLY);
   txtIncoming.setOpaque(true);
   txtIncoming.addEventHandler(this, "textarea1_change1");
-  W = new GButton(main, 230, 140, 80, 30);
+  W = new GButton(main, 230, 141, 80, 30);
   W.setText("W");
   W.addEventHandler(this, "W_click1");
   A = new GButton(main, 150, 180, 80, 30);
@@ -104,21 +114,20 @@ public void createGUI(){
   D = new GButton(main, 310, 180, 80, 30);
   D.setText("D");
   D.addEventHandler(this, "D_click1");
-
-  sketchPad1 = new GSketchPad(main, 210, 120, 80, 60);
+  sketchPad1 = new GSketchPad(main, 262, 122, 80, 60);
   btnComplete = new GButton(main, 30, 220, 160, 50);
   btnComplete.setText("Complete");
   btnComplete.setTextBold();
   btnComplete.addEventHandler(this, "btnComplete_click");
-  btnRoom = new GButton(main, 330, 220, 140, 50);
+  btnRoom = new GButton(main, 330, 220, 142, 41);
   btnRoom.setText("Room");
   btnRoom.setTextBold();
   btnRoom.addEventHandler(this, "btnRoom_click");
   btnScan = new GButton(main, 220, 220, 80, 50);
   btnScan.setText("Scan");
   btnScan.addEventHandler(this, "btnScan_click");
-  btnAuto = new GButton(main, 380, 140, 80, 30);
-  btnAuto.setText("Auto");
+  btnAuto = new GButton(main, 380, 139, 80, 30);
+  btnAuto.setText("Corridor");
   btnAuto.setLocalColorScheme(GCScheme.GREEN_SCHEME);
   btnAuto.addEventHandler(this, "btnAuto_click");
   btnStop = new GButton(main, 60, 140, 80, 30);
@@ -129,6 +138,15 @@ public void createGUI(){
   label1.setTextAlign(GAlign.CENTER, GAlign.MIDDLE);
   label1.setText("GUI");
   label1.setOpaque(false);
+  button2 = new GButton(main, 330, 265, 56, 30);
+  button2.setText("Left");
+  button2.addEventHandler(this, "button2_click1");
+  btnRight = new GButton(main, 406, 266, 66, 30);
+  btnRight.setText("Right");
+  btnRight.addEventHandler(this, "btnLeft");
+  txtCurrentLocation = new GTextArea(main, 200, 11, 270, 29, G4P.SCROLLBARS_NONE);
+  txtCurrentLocation.setOpaque(true);
+  txtCurrentLocation.addEventHandler(this, "textarea1_change2");
   main.loop();
 }
 
@@ -141,7 +159,6 @@ GButton W;
 GButton A; 
 GButton S; 
 GButton D; 
-GImageButton imgButton1; 
 GSketchPad sketchPad1; 
 GButton btnComplete; 
 GButton btnRoom; 
@@ -149,3 +166,6 @@ GButton btnScan;
 GButton btnAuto; 
 GButton btnStop; 
 GLabel label1; 
+GButton button2; 
+GButton btnRight; 
+GTextArea txtCurrentLocation; 

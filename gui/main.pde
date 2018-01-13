@@ -32,7 +32,9 @@ void draw()
   if ( myPort.available() > 0) {  // If data is available,
      myString = myPort.readStringUntil(lf);
     if (myString != null) {
-      txtIncoming.appendText("Message from Robot: " + myString);
+
+
+      txtIncoming.appendText(myString);
     }
   }
 }

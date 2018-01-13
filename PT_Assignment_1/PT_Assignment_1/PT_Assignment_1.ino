@@ -17,8 +17,10 @@
 #define CRA_REG_M_220HZ    0x1C // CRA_REG_M value for magnetometer 220 Hz update rate
 #define LED_PIN 13
 
+
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  500 // microseconds
+#define QTR_THRESHOLD  400 // microseconds
+#define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
 
 // Speed/duration settings
 #define SPEED           200 // Maximum motor speed when going straight; variable speed when turning
@@ -27,7 +29,7 @@
 #define DEVIATION_THRESHOLD 5
 #define REVERSE_SPEED     100
 #define TURN_SPEED        150
-#define FORWARD_SPEED     150
+#define FORWARD_SPEED     100
 #define REVERSE_DURATION  250
 #define TURN_DURATION     200
 Pushbutton button(ZUMO_BUTTON);
@@ -37,7 +39,7 @@ ZumoMotors motors;
 LSM303 compass;
 #define NUM_SENSORS 6
 unsigned int sensor_values[NUM_SENSORS];
-bool line_detection();
+String line_detection();
 int zumo_direction;
 
 // Converts x and y components of a vector to a heading in degrees.
@@ -58,63 +60,91 @@ template <typename T> float heading(LSM303::vector<T> v)
 void setup()
 {	
 	Serial.begin(9600);
-	// Initiate the Wire library and join the I2C bus as a master
+	//Initiate the Wire library and join the I2C bus as a master
 	Serial.println("Press button for Callibration!");
+	//button.waitForButton();
+	//initialise_compass();
+	/*Serial.println("Place zumo over black line for sensor callibration.");
 	button.waitForButton();
-	initialise_compass();
-	Serial.println("Place zumo over black line for sensor callibration.");
-	button.waitForButton();
-	sensor_callibration();
+	sensor_callibration();*/
 	// Init LED pin to enable it to be turned on later
 	pinMode(LED_PIN, OUTPUT);
 
 	// Set up serial monitor for inital testing purposes
-	Serial.println("Put zumo at the start, and press button to begin!!");
-	button.waitForButton();
-	auto_navigation();
-	
+//	Serial.println("Put zumo at the start, and press button to begin!!");
+	//button.waitForButton();
+	//auto_navigation();
+	//manual_control();
+	//outside_room();
+//	sensor_callibration();
 }
-
 
 
 void loop()
 {
-	/*switch (inputChar)
-	{
-	case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
-	case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION); break;
-	case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
-	case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
-	case 'q': case 'Q': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
-	}
-	inputChar = ' '; //reset
-	motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);*/
+/*	reflectanceSensors.read(sensor_values);
+	Serial.println(sensor_values[0]);
+	Serial.println(sensor_values[1]);
+	Serial.println(sensor_values[2]);
+	Serial.println(sensor_values[3]);
+	Serial.println(sensor_values[4]);
+	Serial.println(sensor_values[5]);
+	delay(5000); // the number of milliseconds between readings   */
+	manual_control();
+
 
 }
-bool line_detection() {
+String line_detection() {
 	reflectanceSensors.read(sensor_values);
-	if (sensor_values[0] > QTR_THRESHOLD)
+	if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD))
 	{
-		// if leftmost sensor detects line, reverse and turn to the right
-		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-		delay(REVERSE_DURATION);
-		/*motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-		delay(TURN_DURATION);*/
-		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-		return true;
+		for (int i = 2;i < 4;i++) { //if any value in the middle sensors are above 300, we are in middle territory
+			if (sensor_values[i] > QTR_THRESHOLD) {
+				motors.setSpeeds(0, 0);
+				motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+				Serial.println(sensor_values[i]);
+				Serial.println(i);
+				delay(REVERSE_DURATION);
+				return "WALL"; //we're facing a wall
+			}
+		}
+
+		if ((sensor_values[0] > QTR_THRESHOLD)) {
+
+			//	Serial.println("left" + sensor_values[0] + sensor_values[5]);
+
+
+					// if leftmost sensor detects line, reverse and turn to the right
+			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+			delay(REVERSE_DURATION);
+			motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+			delay(TURN_DURATION);
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			//	rotate(fmod(averageHeading() + 180, 360));
+
+			return "LEFT";
+		}
+		else if ((sensor_values[5] > QTR_THRESHOLD))
+		{
+			//	Serial.println("right" + sensor_values[5] + sensor_values[0]);
+
+				// if rightmost sensor detects line, reverse and turn to the left
+			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+			delay(REVERSE_DURATION);
+			motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+			delay(TURN_DURATION);
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			//rotate(fmod(averageHeading() + 180, 360));
+
+			return "RIGHT";
+		}
+		else {
+			return "N/A";
+		}
+
 	}
-	else if (sensor_values[5] > QTR_THRESHOLD)
-	{
-		// if rightmost sensor detects line, reverse and turn to the left
-		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-		delay(REVERSE_DURATION);
-		/*motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-		delay(TURN_DURATION);*/
-		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-		return true;
-	}
-	return false;
 }
+
 
 //OPTIMIZE RETURN PATH: 
 //STORE THE DELAY FOR THE CORRIDOR 1, NOTE DOWN IF ITS LEFT OR RIGHT, ON RETURN REVERSE THIS
@@ -136,7 +166,7 @@ void manual_control()
 		case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
 		case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
 		case 'r': case 'R': outside_room(); break;
-		case 'c': case 'C': auto_navigation(); break;
+		case 'c': case 'C': corridor(); break;
 		}
 		inputChar = ' '; //reset
 		motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
@@ -146,11 +176,11 @@ void manual_control()
 	}*/
 }
 
-void auto_navigation() {
+void corridor() {
 	Serial.println("Automatic navigation started.");
 	char inputChar;
-	while (!line_detection()) {
-		zumo_direction = averageHeading(); //set the direction the zumo is currently facing
+	while (line_detection() != "WALL") {
+		//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
 		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 		if (Serial.available() > 0)
 		{
@@ -160,26 +190,68 @@ void auto_navigation() {
 		{
 		case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
 		case 'r': case 'R': outside_room(); break;
-		case 'c': case 'C': auto_navigation(); break;
+		case 'c': case 'C': corridor(); break;
 		inputChar = ' '; //reset
 		}
+
 	}
 	Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
 	manual_control();
 }
-void outside_room() {
 
+//cURRENT LOCATION!!!!
+/*bool borderDetect() {
+	reflectanceSensors.read(sensor_values);
+	if (sensor_values[0] > QTR_THRESHOLD)
+	{
+		// if leftmost sensor detects line, reverse and turn to the right
+		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+		delay(REVERSE_DURATION);
+		/*motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+		delay(TURN_DURATION);*/
+	/*	motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		rotate(fmod(averageHeading() + 180, 360));
+
+		return true;
+	}
+	else if (sensor_values[5] > QTR_THRESHOLD)
+	{
+		// if rightmost sensor detects line, reverse and turn to the left
+		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+		delay(REVERSE_DURATION);
+		/*motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+		delay(TURN_DURATION);*/
+	/*	motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		rotate(fmod(averageHeading() + 180, 360));
+
+		return true;
+	}
+	return false;
+
+}*/
+void outside_room() {
 	//to do, fix errors and scan from left to right  in order to automatically determine where the door is
-	if (check_left_door()) {
-		rotate(90));
-		motors.setSpeeds(50, 50); //drive forward a bit 
-	}
-	else {
-		rotate();
-		motors.setSpeeds(50, 50); //drive forward a bit
-	}
+	//rotate(zumo_direction);
+
+
+	//motors.setLeftSpeed(250); motors.setRightSpeed(250); delay(200);
+	//motors.setLeftSpeed(-150); motors.setRightSpeed(150); delay(500);
+	//motors.setLeftSpeed(250); motors.setRightSpeed(250); delay(200);
+
+	//this will need its only line detector.
+		rotate(fmod(averageHeading() + 90, 360));
+		while (line_detection() == "N/A") {
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			 //inch forward...
+		}
+
+		/*rotate((averageHeading() + 90, 360));
+		Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");	}
+	motors.setLeftSpeed(-250); motors.setRightSpeed(-250); delay(200);*/
+
 
 }
+
 
 void sensor_callibration() {
 	// Initialise the reflectance sensors module
@@ -282,60 +354,13 @@ float relativeHeading(float heading_from, float heading_to)
 	return relative_heading;
 }
 
-void compassTest() {
 
-	float heading, relative_heading;
-	int speed, angle;
-	static float target_heading = averageHeading();
-	angle = 90;
-	// Heading is given in degrees away from the magnetic vector, increasing clockwise
-	heading = averageHeading();
-
-	// This gives us the relative heading with respect to the target angle
-	relative_heading = relativeHeading(heading, angle);
-
-	// If the Zumo has turned to the direction it wants to be pointing, go straight and then do another turn
-	if (abs(relative_heading) < DEVIATION_THRESHOLD)
-	{
-
-		// Turn off motors and wait a short time to reduce interference from motors
-		motors.setSpeeds(0, 0);
-		delay(500);
-
-		// Turn 90 degrees relative to the direction we are pointing.
-		// This will help account for variable magnetic field, as opposed
-		// to using fixed increments of 90 degrees from the initial
-		// heading (which might have been measured in a different magnetic
-		// field than the one the Zumo is experiencing now).
-		// Note: fmod() is floating point modulo
-		target_heading = fmod(averageHeading() + 90, 360);
-	}
-	else
-	{
-		// To avoid overshooting, the closer the Zumo gets to the target
-		// heading, the slower it should turn. Set the motor speeds to a
-		// minimum base amount plus an additional variable amount based
-		// on the heading difference.
-
-		speed = SPEED * relative_heading / 180;
-
-		if (speed < 0)
-			speed -= TURN_BASE_SPEED;
-		else
-			speed += TURN_BASE_SPEED;
-
-		motors.setSpeeds(speed, -speed);
-
-	}
-	motors.setSpeeds(0, 0);
-	delay(500);
-
-
-}
 void rotate(int degrees) //rotate to an angle based on compass
 {
 	int speed;
 	float heading = averageHeading();
+
+
 	float relative = relativeHeading(heading, degrees);
 	while (abs(relative) > DEVIATION_THRESHOLD)
 	{
