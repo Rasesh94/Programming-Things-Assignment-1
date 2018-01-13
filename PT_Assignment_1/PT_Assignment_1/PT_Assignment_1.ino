@@ -17,6 +17,7 @@
 #define CRA_REG_M_220HZ    0x1C // CRA_REG_M value for magnetometer 220 Hz update rate
 #define LED_PIN 13
 
+//create a global for the zumos current position (hallway etc) or even create a room instance for the zumo ( to submit )
 
 const int trigPin = 2;
 const int echoPin = 6;
@@ -26,7 +27,7 @@ const int echoPin = 6;
 #define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
 
 // Speed/duration settings
-#define SPEED           200 // Maximum motor speed when going straight; variable speed when turning
+#define SPEED           150 // Maximum motor speed when going straight; variable speed when turning
 #define TURN_BASE_SPEED 100 // Base speed when turning (added to variable speed)
 // Allowed deviation (in degrees) relative to target angle that must be achieved before driving straight
 #define DEVIATION_THRESHOLD 5
@@ -202,6 +203,7 @@ void corridor() {
 }
 
 //cURRENT LOCATION!!!!
+//this border detect is just for the outside room ..
 bool borderDetect() {
 	reflectanceSensors.read(sensor_values);
 	if (sensor_values[0] > QTR_THRESHOLD)
@@ -209,8 +211,8 @@ bool borderDetect() {
 		// if leftmost sensor detects line, reverse and turn to the right
 		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		//motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 		rotate(fmod(averageHeading() + 180, 360));
+		motors.setSpeeds(50, 50);
 
 		return true;
 	}
@@ -218,8 +220,8 @@ bool borderDetect() {
 	{
 		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		//motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 		rotate(fmod(averageHeading() + 180, 360));
+		motors.setSpeeds(50, 50);
 
 		return true;
 	}
@@ -230,7 +232,7 @@ bool borderDetect() {
 bool scan() {
 	//taken from ultrasonic_sensor_test example
 	long distance, duration, inches, cm;
- 
+	bool objDetected = false;
 	pinMode(trigPin, OUTPUT);
 	digitalWrite(trigPin, LOW);
 	delayMicroseconds(2);
@@ -241,24 +243,24 @@ bool scan() {
 	// duration is the time (in microseconds) from the sending
 	// of the ping to the reception of its echo off of an object.
 	pinMode(echoPin, INPUT);
-	duration = pulseIn(echoPin, HIGH);
-
-	// convert the time into a distance
-	inches = microsecondsToInches(duration);
-	cm = microsecondsToCentimeters(duration);
-
+	
 	delay(100);
 	
-	rotate(360); //360
 
-	if (distance < 7)
-	{
-		return true;
-		motors.setSpeeds(-FORWARD_SPEED, -FORWARD_SPEED);
+	for (int i = 0; i < 5;i++) {
+		duration = pulseIn(echoPin, HIGH);
 
+		// convert the time into a distance
+		cm = microsecondsToCentimeters(duration);
+
+		rotate(fmod(averageHeading() + 90, 360)); //does a 90
+		if (cm < 10)
+		{
+			objDetected = true;
+
+		}
 	}
-	return false;
-	motors.setSpeeds(-FORWARD_SPEED, -FORWARD_SPEED);
+	return objDetected;
 
 }
 
@@ -280,17 +282,21 @@ long microsecondsToCentimeters(long microseconds)
 	return microseconds / 29 / 2;
 }
 void outside_room() {
-	//to do, fix errors and scan from left to right  in order to automatically determine where the door is
-	//this will need its only line detector.
+
 	rotate(fmod(averageHeading() + 90, 360));
 	while (!borderDetect()) { //establish direction
-		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-		if (scan()) {
-			Serial.println("Found someone");
-		}
-		else {
-			Serial.println(":(");
-		}
+			motors.setSpeeds(50, 50);
+	}
+		moveandscan();
+
+	}
+bool moveandscan() {
+	motors.setSpeeds(100, 100);
+	if (scan()) {
+		Serial.println("Object found here! Please send someone to collect him!");
+	}
+	else {
+		Serial.println("No one detected in room :);");
 	}
 
 }

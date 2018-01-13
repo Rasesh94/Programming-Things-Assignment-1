@@ -32,9 +32,7 @@ void draw()
   if ( myPort.available() > 0) {  // If data is available,
      myString = myPort.readStringUntil(lf);
     if (myString != null) {
-
-
-      txtIncoming.appendText(myString);
+      txtIncoming.appendText(myString.toString());
     }
   }
 }
