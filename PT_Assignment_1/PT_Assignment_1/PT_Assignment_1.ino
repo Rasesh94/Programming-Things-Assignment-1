@@ -18,6 +18,9 @@
 #define LED_PIN 13
 
 
+const int trigPin = 2;
+const int echoPin = 6;
+
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 #define QTR_THRESHOLD  500 // microseconds
 #define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
@@ -64,9 +67,9 @@ void setup()
 	Serial.println("Press button for Callibration!");
 	button.waitForButton();
 	initialise_compass();
-	Serial.println("Place zumo over black line for sensor callibration.");
-	button.waitForButton();
-	sensor_callibration();
+//	Serial.println("Place zumo over black line for sensor callibration.");
+	//button.waitForButton();
+//	sensor_callibration();
 	// Init LED pin to enable it to be turned on later
 	pinMode(LED_PIN, OUTPUT);
 
@@ -199,58 +202,98 @@ void corridor() {
 }
 
 //cURRENT LOCATION!!!!
-/*bool borderDetect() {
+bool borderDetect() {
 	reflectanceSensors.read(sensor_values);
 	if (sensor_values[0] > QTR_THRESHOLD)
 	{
 		// if leftmost sensor detects line, reverse and turn to the right
 		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		/*motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-		delay(TURN_DURATION);*/
-	/*	motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		//motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 		rotate(fmod(averageHeading() + 180, 360));
 
 		return true;
 	}
 	else if (sensor_values[5] > QTR_THRESHOLD)
 	{
-		// if rightmost sensor detects line, reverse and turn to the left
 		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		/*motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-		delay(TURN_DURATION);*/
-	/*	motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		//motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 		rotate(fmod(averageHeading() + 180, 360));
 
 		return true;
 	}
 	return false;
 
-}*/
-void outside_room() {
-	//to do, fix errors and scan from left to right  in order to automatically determine where the door is
-	//rotate(zumo_direction);
+}
 
+bool scan() {
+	//taken from ultrasonic_sensor_test example
+	long distance, duration, inches, cm;
+ 
+	pinMode(trigPin, OUTPUT);
+	digitalWrite(trigPin, LOW);
+	delayMicroseconds(2);
+	digitalWrite(trigPin, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(trigPin, LOW);
+	// Read the signal from the sensor: a HIGH pulse whose
+	// duration is the time (in microseconds) from the sending
+	// of the ping to the reception of its echo off of an object.
+	pinMode(echoPin, INPUT);
+	duration = pulseIn(echoPin, HIGH);
 
-	//motors.setLeftSpeed(250); motors.setRightSpeed(250); delay(200);
-	//motors.setLeftSpeed(-150); motors.setRightSpeed(150); delay(500);
-	//motors.setLeftSpeed(250); motors.setRightSpeed(250); delay(200);
+	// convert the time into a distance
+	inches = microsecondsToInches(duration);
+	cm = microsecondsToCentimeters(duration);
 
-	//this will need its only line detector.
-		rotate(fmod(averageHeading() + 90, 360));
-		while (line_detection() == "N/A") {
-			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-			 //inch forward...
-		}
+	delay(100);
+	
+	rotate(360); //360
 
-		/*rotate((averageHeading() + 90, 360));
-		Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");	}
-	motors.setLeftSpeed(-250); motors.setRightSpeed(-250); delay(200);*/
+	if (distance < 7)
+	{
+		return true;
+		motors.setSpeeds(-FORWARD_SPEED, -FORWARD_SPEED);
 
+	}
+	return false;
+	motors.setSpeeds(-FORWARD_SPEED, -FORWARD_SPEED);
 
 }
 
+long microsecondsToInches(long microseconds)
+{
+	// According to Parallax's datasheet for the PING))), there are
+	// 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
+	// second).  This gives the distance travelled by the ping, outbound
+	// and return, so we divide by 2 to get the distance of the obstacle.
+	// See: http://www.parallax.com/dl/docs/prod/acc/28015-PING-v1.3.pdf
+	return microseconds / 74 / 2;
+}
+
+long microsecondsToCentimeters(long microseconds)
+{
+	// The speed of sound is 340 m/s or 29 microseconds per centimeter.
+	// The ping travels out and back, so to find the distance of the
+	// object we take half of the distance travelled.
+	return microseconds / 29 / 2;
+}
+void outside_room() {
+	//to do, fix errors and scan from left to right  in order to automatically determine where the door is
+	//this will need its only line detector.
+	rotate(fmod(averageHeading() + 90, 360));
+	while (!borderDetect()) { //establish direction
+		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+		if (scan()) {
+			Serial.println("Found someone");
+		}
+		else {
+			Serial.println(":(");
+		}
+	}
+
+}
 
 void sensor_callibration() {
 	// Initialise the reflectance sensors module
@@ -373,5 +416,5 @@ void rotate(int degrees) //rotate to an angle based on compass
 		motors.setSpeeds(speed, -speed);
 	}
 	motors.setSpeeds(0, 0);
-	delay(500);
+	delay(400);
 }
