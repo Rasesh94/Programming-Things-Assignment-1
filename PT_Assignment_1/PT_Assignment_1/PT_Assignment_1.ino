@@ -19,7 +19,7 @@
 
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  400 // microseconds
+#define QTR_THRESHOLD  500 // microseconds
 #define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
 
 // Speed/duration settings
@@ -138,10 +138,9 @@ String line_detection() {
 
 			return "RIGHT";
 		}
-		else {
-			return "N/A";
-		}
-
+	}
+	else {
+		return "N/A";
 	}
 }
 
