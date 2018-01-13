@@ -62,11 +62,11 @@ void setup()
 	Serial.begin(9600);
 	//Initiate the Wire library and join the I2C bus as a master
 	Serial.println("Press button for Callibration!");
-	//button.waitForButton();
-	//initialise_compass();
-	/*Serial.println("Place zumo over black line for sensor callibration.");
 	button.waitForButton();
-	sensor_callibration();*/
+	initialise_compass();
+	Serial.println("Place zumo over black line for sensor callibration.");
+	button.waitForButton();
+	sensor_callibration();
 	// Init LED pin to enable it to be turned on later
 	pinMode(LED_PIN, OUTPUT);
 
@@ -98,7 +98,7 @@ String line_detection() {
 	reflectanceSensors.read(sensor_values);
 	if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD))
 	{
-		for (int i = 2;i < 4;i++) { //if any value in the middle sensors are above 300, we are in middle territory
+		for (int i = 1;i < 5;i++) { //if any value in the middle sensors are above 500, we are in middle territory
 			if (sensor_values[i] > QTR_THRESHOLD) {
 				motors.setSpeeds(0, 0);
 				motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
@@ -161,9 +161,9 @@ void manual_control()
 		switch (inputChar)
 		{
 		case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
-		case 'a': case 'A': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-250); motors.setRightSpeed(250); delay(REVERSE_DURATION); break;
+		case 'a': case 'A': rotate(fmod(averageHeading() - 93, 360));; break; //aprox left
 		case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
-		case 'd': case 'D': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(250); motors.setRightSpeed(-250); delay(REVERSE_DURATION); break;
+		case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));; break; //approx right
 		case 'r': case 'R': outside_room(); break;
 		case 'c': case 'C': corridor(); break;
 		}
@@ -190,8 +190,8 @@ void corridor() {
 		case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
 		case 'r': case 'R': outside_room(); break;
 		case 'c': case 'C': corridor(); break;
-		inputChar = ' '; //reset
 		}
+		inputChar = ' '; //reset
 
 	}
 	Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
