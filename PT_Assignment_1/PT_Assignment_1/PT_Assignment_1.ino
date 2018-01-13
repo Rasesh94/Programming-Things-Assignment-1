@@ -23,7 +23,7 @@ const int trigPin = 2;
 const int echoPin = 6;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
-#define QTR_THRESHOLD  500 // microseconds
+#define QTR_THRESHOLD  300 // microseconds
 #define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
 
 // Speed/duration settings
@@ -66,8 +66,8 @@ void setup()
 	Serial.begin(9600);
 	//Initiate the Wire library and join the I2C bus as a master
 	Serial.println("Press button for Callibration!");
-	button.waitForButton();
-	initialise_compass();
+	//button.waitForButton();
+	//initialise_compass();
 //	Serial.println("Place zumo over black line for sensor callibration.");
 	//button.waitForButton();
 //	sensor_callibration();
@@ -86,7 +86,7 @@ void setup()
 
 void loop()
 {
-/*	reflectanceSensors.read(sensor_values);
+reflectanceSensors.read(sensor_values);
 	Serial.println(sensor_values[0]);
 	Serial.println(sensor_values[1]);
 	Serial.println(sensor_values[2]);
@@ -94,14 +94,13 @@ void loop()
 	Serial.println(sensor_values[4]);
 	Serial.println(sensor_values[5]);
 	delay(5000); // the number of milliseconds between readings   */
-	manual_control();
+	//manual_control();
 
 
 }
 String line_detection() {
 	reflectanceSensors.read(sensor_values);
-	if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD))
-	{
+	if ((sensor_values[1] > QTR_THRESHOLD) || (sensor_values[2] > QTR_THRESHOLD) || (sensor_values[3] > QTR_THRESHOLD) || (sensor_values[4] > QTR_THRESHOLD)) {
 		for (int i = 1;i < 5;i++) { //if any value in the middle sensors are above 500, we are in middle territory
 			if (sensor_values[i] > QTR_THRESHOLD) {
 				motors.setSpeeds(0, 0);
@@ -112,8 +111,9 @@ String line_detection() {
 				return "WALL"; //we're facing a wall
 			}
 		}
+	}
 
-		if ((sensor_values[0] > QTR_THRESHOLD)) {
+	else if ((sensor_values[0] > QTR_THRESHOLD)) {
 
 			//	Serial.println("left" + sensor_values[0] + sensor_values[5]);
 
@@ -128,7 +128,7 @@ String line_detection() {
 
 			return "LEFT";
 		}
-		else if ((sensor_values[5] > QTR_THRESHOLD))
+	else if ((sensor_values[5] > QTR_THRESHOLD))
 		{
 			//	Serial.println("right" + sensor_values[5] + sensor_values[0]);
 
@@ -142,7 +142,6 @@ String line_detection() {
 
 			return "RIGHT";
 		}
-	}
 	else {
 		return "N/A";
 	}
