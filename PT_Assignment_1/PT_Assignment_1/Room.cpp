@@ -1,3 +1,4 @@
+
 class Room {
 private:
 	int id;
@@ -10,8 +11,6 @@ public:
 	int get_id();
 	bool get_objects();
 	int get_corr_id();
-
-
 	//setters
 	void set_id(int id_);
 	void set_objects(bool objects_);

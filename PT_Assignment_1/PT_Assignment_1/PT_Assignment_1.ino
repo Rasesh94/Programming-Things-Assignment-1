@@ -3,7 +3,11 @@
  Created:	1/7/2018 4:53:00 PM
  Author:	Rasesh
 */
-#pragma once
+
+/*#include <utility.h>
+#include <unwind-cxx.h>
+#include <system_configuration.h>
+#include <StandardCplusplus.h>*/
 #include <LSM303.h>
 #include <ZumoMotors.h>
 #include <Servo.h>
@@ -12,20 +16,21 @@
 #include <ZumoBuzzer.h>
 #include <Pushbutton.h>
 #include <Wire.h>
+//#include <vector>
+
 #define CALIBRATION_SAMPLES 70  // Number of compass readings to take when calibrating
 #define CRB_REG_M_2_5GAUSS 0x60 // CRB_REG_M value for magnetometer +/-2.5 gauss full scale
 #define CRA_REG_M_220HZ    0x1C // CRA_REG_M value for magnetometer 220 Hz update rate
 #define LED_PIN 13
 
 //create a global for the zumos current position (hallway etc) or even create a room instance for the zumo ( to submit )
-
 const int trigPin = 2;
 const int echoPin = 6;
-
+//std::vector<Room> rooms;
+//std::vector<Corridor> corridors;
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 #define QTR_THRESHOLD  300 // microseconds
 #define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
-
 // Speed/duration settings
 #define SPEED           150 // Maximum motor speed when going straight; variable speed when turning
 #define TURN_BASE_SPEED 100 // Base speed when turning (added to variable speed)
@@ -44,7 +49,7 @@ LSM303 compass;
 #define NUM_SENSORS 6
 unsigned int sensor_values[NUM_SENSORS];
 String line_detection();
-int zumo_direction;
+
 
 // Converts x and y components of a vector to a heading in degrees.
 // This function is used instead of LSM303::heading() because we don't
@@ -62,7 +67,8 @@ template <typename T> float heading(LSM303::vector<T> v)
 	return angle;
 }
 void setup()
-{	
+{
+	
 	Serial.begin(9600);
 	//Initiate the Wire library and join the I2C bus as a master
 	Serial.println("Press button for Callibration!");
@@ -174,7 +180,8 @@ String line_detection() {
 			case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
 			case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));; break; //approx right
 			case 'r': case 'R': outside_room(); break;
-			case 'c': case 'C': corridor(); break;
+			case 'c': case 'C': corridor(false); break;
+			case 'sub': case 'SUB': corridor(true); break;
 			}
 			inputChar = ' '; //reset
 			motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
@@ -182,37 +189,64 @@ String line_detection() {
 	}
 
 
-void corridor() {
-	//create corridor instance
 
-	//IF LAST TURN WAS A LEFT, WE CAN STILL DO THAT FUCKING 180 THING!! WE NEED CLASSESS
-	//WHEN YOU WAKE UP THE FIRST THING WE NEED TO DO IS CLASSES!!
-	//left and right turns can be automated
-
-	Serial.println("In Corridor..");
-	char inputChar;
-	while ((inputChar != 'stop'))
-	{
-		while (line_detection() != "WALL") {
-			//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
-			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-			if (Serial.available() > 0)
+void corridor(bool sub) {
+		//create corridor instance
+		//Corridor corridor;
+		//IF LAST TURN WAS A LEFT, WE CAN STILL DO THAT  180 THING!! WE NEED CLASSESS
+		//WHEN YOU WAKE UP THE FIRST THING WE NEED TO DO IS CLASSES!!
+		//left and right turns can be automated
+		if (!sub) {
+			Serial.println("In Corridor..");
+			char inputChar;
+			while ((inputChar != 'STOP'))
 			{
-				inputChar = Serial.read();
-			}
-			switch (inputChar)
-			{
-			case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
-			case 'r': case 'R': outside_room(); break;
-			case 'c': case 'C': corridor(); break;
-			}
-			inputChar = ' '; //reset
+				while (line_detection() != "WALL") {
+					//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
+					motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+					if (Serial.available() > 0)
+					{
+						inputChar = Serial.read();
+					}
+					switch (inputChar)
+					{
+					case 'r': case 'R': outside_room(); break;
+					}
+					inputChar = ' '; //reset
 
+				}
+			}
+			Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
+			manual_control();
+		}
+		else {
+			Serial.println("In sub corridor..");
+			char inputChar;
+			while ((inputChar != 'STOP'))
+			{
+				if (lookForLine()) {
+					rotate(fmod(averageHeading() + 180, 360)); //does a 90
+				}
+				while (line_detection() != "WALL") {
+					//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
+					motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+					if (Serial.available() > 0)
+					{
+						inputChar = Serial.read();
+					}
+					switch (inputChar)
+					{
+					case 'r': case 'R': outside_room(); break;
+					}
+					inputChar = ' '; //reset
+
+				}
+			}
+			Serial.println("End of subcorridor, moving to the end.");
+			rotate(fmod(averageHeading() + 180, 360)); //does a 90
+			manual_control();
 		}
 	}
-	Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
-	manual_control();
-}
 
 //cURRENT LOCATION!!!!
 //this border detect is just for the outside room ..
@@ -220,20 +254,10 @@ bool borderDetect() {
 	reflectanceSensors.read(sensor_values);
 	if (sensor_values[0] > QTR_THRESHOLD)
 	{
-		// if leftmost sensor detects line, reverse and turn to the right
-	/*	motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-		delay(REVERSE_DURATION);
-		rotate(fmod(averageHeading() + 180, 360)); //does a 90
-		motors.setSpeeds(50, 50);*/
-
 		return true;
 	}
 	else if (sensor_values[5] > QTR_THRESHOLD)
 	{
-		/*motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-		delay(REVERSE_DURATION);
-		rotate(fmod(averageHeading() + 180, 360)); //does a 90
-		motors.setSpeeds(50, 50);*/
 
 		return true;
 	}
@@ -265,7 +289,7 @@ bool scan() {
 		// convert the time into a distance
 		cm = microsecondsToCentimeters(duration);
 		Serial.println(cm);
-		if (cm <= 10)
+		if (cm <= 20)
 		{
 			return true;
 		}
@@ -290,29 +314,40 @@ long microsecondsToCentimeters(long microseconds)
 	// object we take half of the distance travelled.
 	return microseconds / 29 / 2;
 }
+
+bool lookForLine() {
+	bool temp = false;
+	int iterations = 0;
+	for (int i = 0; i < 3; i++) {
+		motors.setLeftSpeed(50);
+		motors.setRightSpeed(50);
+		delay(250);
+		if (line_detection() != "N/A") {
+			temp = true; 
+		}
+	}
+	//reverse back
+	for (int i = 0; i < 3; i++) {
+		motors.setLeftSpeed(-25);
+		motors.setRightSpeed(-25);
+		delay(250);
+	}
+	return temp;
+}
 void outside_room() {
 
 	rotate(fmod(averageHeading() + 90, 360));
-	bool lineDetected = false;
-	for (int i = 0; i < 3; i++) {
-		motors.setSpeeds(50, 50);
-		if (line_detection()) {
-			lineDetected = true;
-		}
-	}
-	for (int i = 0; i < 3; i++) {
-		motors.setSpeeds(-50, -50);
-	}
+	
 
 	// use the line detected code for every corner
-	if (lineDetected = true) {
+	if (lookForLine()) {
 		rotate(fmod(averageHeading() + 180, 360)); //does a 90
 	}
-	while (!borderDetect()) { //crawl forward until second border so we can position ourselves at the back of the room for good scan range.
+	/*while (!borderDetect()) { //crawl forward until second border so we can position ourselves at the back of the room for good scan range.
 	}
 	if (borderDetect()) {
 		rotate(fmod(averageHeading() + 180, 360));
-	}
+	}*/
 	
 		moveandscan();
 }
@@ -320,14 +355,18 @@ void outside_room() {
 
 bool moveandscan() {
 				//4 turns does a 360
+	motors.setLeftSpeed(75);
+	motors.setRightSpeed(75);
+	delay(400);
+
 	for (int i = 0; i < 4;i++) {
+		rotate(fmod(averageHeading() + 90, 360)); //does a 90
 		if (scan()) {
 			Serial.println("Object found here! Please send someone to collect him!");
 		}
 		else {
 			Serial.println("No one detected in room.");
 		}
-		rotate(fmod(averageHeading() + 90, 360)); //does a 90
 	}
 	rotate(fmod(averageHeading() + 180, 360));
 }
