@@ -152,54 +152,6 @@ String line_detection() {
 	}
 }
 
-/*String line_detection() {
-	reflectanceSensors.read(sensor_values);
-	if ((sensor_values[1] > QTR_THRESHOLD) || (sensor_values[2] > QTR_THRESHOLD) || (sensor_values[3] > QTR_THRESHOLD) || (sensor_values[4] > QTR_THRESHOLD)) {
-		//if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD)) {
-		//	motors.setSpeeds(0, 0);//slow to give it a chance to re-read.
-			//reflectanceSensors.read(sensor_values);
-
-		for (int i = 1;i < 4;i++) { //if any value in the middle sensors are above 500, we are in middle territory
-			if (sensor_values[i] > QTR_THRESHOLD) {
-				motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-				//Serial.println(sensor_values[i]);
-				//Serial.println(i);
-				delay(REVERSE_DURATION);
-				return "WALL"; //we're facing a wall
-			}
-		}
-		//}
-		if ((sensor_values[0] > QTR_THRESHOLD)) {
-
-			//	Serial.println("left" + sensor_values[0] + sensor_values[5]);
-
-
-					// if leftmost sensor detects line, reverse and turn to the right
-			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-			delay(REVERSE_DURATION);
-			motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-			delay(TURN_DURATION);
-			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-			//	rotate(fmod(averageHeading() + 180, 360));
-
-			return "LEFT";
-		}
-		else if ((sensor_values[5] > QTR_THRESHOLD))
-		{
-			//	Serial.println("right" + sensor_values[5] + sensor_values[0]);
-			// if rightmost sensor detects line, reverse and turn to the left
-			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
-			delay(REVERSE_DURATION);
-			motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-			delay(TURN_DURATION);
-			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-			//rotate(fmod(averageHeading() + 180, 360));
-			return "RIGHT";
-		}
-	}
-	else { return "N/A"; }
-}*/
-
 
 
 //OPTIMIZE RETURN PATH: 
@@ -285,33 +237,38 @@ bool borderDetect() {
 
 bool scan() {
 	//taken from ultrasonic_sensor_test example
-	long distance, duration, inches, cm;
-	bool objDetected = false;
+	// establish variables for duration of the ping, 
+	// and the distance result in inches and centimeters:
+	long duration, inches, cm;
+
+	// The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+	// Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
 	pinMode(trigPin, OUTPUT);
 	digitalWrite(trigPin, LOW);
 	delayMicroseconds(2);
 	digitalWrite(trigPin, HIGH);
 	delayMicroseconds(10);
 	digitalWrite(trigPin, LOW);
+	bool objDetected = false;
 	// Read the signal from the sensor: a HIGH pulse whose
 	// duration is the time (in microseconds) from the sending
 	// of the ping to the reception of its echo off of an object.
 	pinMode(echoPin, INPUT);
 	
-	delay(100);
+
 	
 	//4 turns does a 360
 	for (int i = 0; i < 4;i++) {
-		duration = pulseIn(echoPin, HIGH);
 
+		duration = pulseIn(echoPin, HIGH);
 		// convert the time into a distance
 		cm = microsecondsToCentimeters(duration);
+		Serial.println(cm);
 
 		rotate(fmod(averageHeading() + 90, 360)); //does a 90
-		if (cm < 10)
+		if ((cm <= 10) && (cm > 0))
 		{
 			objDetected = true;
-
 		}
 	}
 	return objDetected;
@@ -338,14 +295,15 @@ long microsecondsToCentimeters(long microseconds)
 void outside_room() {
 
 	rotate(fmod(averageHeading() + 90, 360));
-	while (!borderDetect()) { //establish direction
+
+	borderDetect();  //first border detect to check if line is behind us
+	while (!borderDetect()) { //crawl forward until second border so we can position ourselves at the back of the room for good scan range.
 			motors.setSpeeds(50, 50);
 	}
 		moveandscan();
 
-	}
+}
 bool moveandscan() {
-	motors.setSpeeds(100, 100);
 	if (scan()) {
 		Serial.println("Object found here! Please send someone to collect him!");
 	}
