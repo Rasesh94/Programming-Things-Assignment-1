@@ -67,10 +67,10 @@ void setup()
 	//Initiate the Wire library and join the I2C bus as a master
 	Serial.println("Press button for Callibration!");
 	//button.waitForButton();
-	//initialise_compass();
+	initialise_compass();
 //	Serial.println("Place zumo over black line for sensor callibration.");
 	//button.waitForButton();
-//	sensor_callibration();
+	//sensor_callibration();
 	// Init LED pin to enable it to be turned on later
 	pinMode(LED_PIN, OUTPUT);
 
@@ -86,7 +86,7 @@ void setup()
 
 void loop()
 {
-reflectanceSensors.read(sensor_values);
+/*reflectanceSensors.read(sensor_values);
 	Serial.println(sensor_values[0]);
 	Serial.println(sensor_values[1]);
 	Serial.println(sensor_values[2]);
@@ -94,13 +94,17 @@ reflectanceSensors.read(sensor_values);
 	Serial.println(sensor_values[4]);
 	Serial.println(sensor_values[5]);
 	delay(5000); // the number of milliseconds between readings   */
-	//manual_control();
+	manual_control();
 
 
 }
 String line_detection() {
 	reflectanceSensors.read(sensor_values);
-	if ((sensor_values[1] > QTR_THRESHOLD) || (sensor_values[2] > QTR_THRESHOLD) || (sensor_values[3] > QTR_THRESHOLD) || (sensor_values[4] > QTR_THRESHOLD)) {
+
+	if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD)) {
+		motors.setSpeeds(0, 0);//slow to give it a chance to re-read.
+		delay(200);
+		reflectanceSensors.read(sensor_values);
 		for (int i = 1;i < 5;i++) { //if any value in the middle sensors are above 500, we are in middle territory
 			if (sensor_values[i] > QTR_THRESHOLD) {
 				motors.setSpeeds(0, 0);
@@ -111,9 +115,61 @@ String line_detection() {
 				return "WALL"; //we're facing a wall
 			}
 		}
-	}
 
-	else if ((sensor_values[0] > QTR_THRESHOLD)) {
+
+		if ((sensor_values[0] > QTR_THRESHOLD)) {
+
+			//	Serial.println("left" + sensor_values[0] + sensor_values[5]);
+
+
+			// if leftmost sensor detects line, reverse and turn to the right
+			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+			delay(REVERSE_DURATION);
+			motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+			delay(TURN_DURATION);
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			//	rotate(fmod(averageHeading() + 180, 360));
+
+			return "LEFT";
+		}
+		else if ((sensor_values[5] > QTR_THRESHOLD))
+		{
+			//	Serial.println("right" + sensor_values[5] + sensor_values[0]);
+
+			// if rightmost sensor detects line, reverse and turn to the left
+			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+			delay(REVERSE_DURATION);
+			motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+			delay(TURN_DURATION);
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			//rotate(fmod(averageHeading() + 180, 360));
+
+			return "RIGHT";
+		}
+	}
+	else {
+		return "N/A";
+	}
+}
+
+/*String line_detection() {
+	reflectanceSensors.read(sensor_values);
+	if ((sensor_values[1] > QTR_THRESHOLD) || (sensor_values[2] > QTR_THRESHOLD) || (sensor_values[3] > QTR_THRESHOLD) || (sensor_values[4] > QTR_THRESHOLD)) {
+		//if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5] > QTR_THRESHOLD)) {
+		//	motors.setSpeeds(0, 0);//slow to give it a chance to re-read.
+			//reflectanceSensors.read(sensor_values);
+
+		for (int i = 1;i < 4;i++) { //if any value in the middle sensors are above 500, we are in middle territory
+			if (sensor_values[i] > QTR_THRESHOLD) {
+				motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+				//Serial.println(sensor_values[i]);
+				//Serial.println(i);
+				delay(REVERSE_DURATION);
+				return "WALL"; //we're facing a wall
+			}
+		}
+		//}
+		if ((sensor_values[0] > QTR_THRESHOLD)) {
 
 			//	Serial.println("left" + sensor_values[0] + sensor_values[5]);
 
@@ -128,55 +184,54 @@ String line_detection() {
 
 			return "LEFT";
 		}
-	else if ((sensor_values[5] > QTR_THRESHOLD))
+		else if ((sensor_values[5] > QTR_THRESHOLD))
 		{
 			//	Serial.println("right" + sensor_values[5] + sensor_values[0]);
-
-				// if rightmost sensor detects line, reverse and turn to the left
+			// if rightmost sensor detects line, reverse and turn to the left
 			motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 			delay(REVERSE_DURATION);
 			motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
 			delay(TURN_DURATION);
 			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
 			//rotate(fmod(averageHeading() + 180, 360));
-
 			return "RIGHT";
 		}
-	else {
-		return "N/A";
 	}
-}
+	else { return "N/A"; }
+}*/
+
 
 
 //OPTIMIZE RETURN PATH: 
 //STORE THE DELAY FOR THE CORRIDOR 1, NOTE DOWN IF ITS LEFT OR RIGHT, ON RETURN REVERSE THIS
 
-void manual_control()
-{
-	char inputChar;
-	while (inputChar != 'C')
+	void manual_control()
 	{
+		char inputChar;
+		while (inputChar != 'C')
+		{
 
-		if (Serial.available() > 0)
-		{
-			inputChar = Serial.read();
+			if (Serial.available() > 0)
+			{
+				inputChar = Serial.read();
+			}
+			switch (inputChar)
+			{
+			case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
+			case 'a': case 'A': rotate(fmod(averageHeading() - 93, 360));; break; //aprox left
+			case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
+			case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));; break; //approx right
+			case 'r': case 'R': outside_room(); break;
+			case 'c': case 'C': corridor(); break;
+			}
+			inputChar = ' '; //reset
+			motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
 		}
-		switch (inputChar)
-		{
-		case 'w': case 'W': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(FORWARD_SPEED); motors.setRightSpeed(FORWARD_SPEED); delay(REVERSE_DURATION); break;
-		case 'a': case 'A': rotate(fmod(averageHeading() - 93, 360));; break; //aprox left
-		case 's': case 'S': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(-REVERSE_SPEED); motors.setRightSpeed(-REVERSE_SPEED); delay(REVERSE_DURATION); break;
-		case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));; break; //approx right
-		case 'r': case 'R': outside_room(); break;
-		case 'c': case 'C': corridor(); break;
-		}
-		inputChar = ' '; //reset
-		motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
 	}
 	/*if (inputChar == 'C') {
 	auto_navigation();
 	}*/
-}
+
 
 void corridor() {
 	Serial.println("Automatic navigation started.");
@@ -245,8 +300,8 @@ bool scan() {
 	
 	delay(100);
 	
-
-	for (int i = 0; i < 5;i++) {
+	//4 turns does a 360
+	for (int i = 0; i < 4;i++) {
 		duration = pulseIn(echoPin, HIGH);
 
 		// convert the time into a distance
