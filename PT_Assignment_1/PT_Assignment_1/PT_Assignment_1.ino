@@ -180,29 +180,35 @@ String line_detection() {
 			motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(0);
 		}
 	}
-	/*if (inputChar == 'C') {
-	auto_navigation();
-	}*/
 
 
 void corridor() {
-	Serial.println("Automatic navigation started.");
-	char inputChar;
-	while (line_detection() != "WALL") {
-		//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
-		motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
-		if (Serial.available() > 0)
-		{
-			inputChar = Serial.read();
-		}
-		switch (inputChar)
-		{
-		case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
-		case 'r': case 'R': outside_room(); break;
-		case 'c': case 'C': corridor(); break;
-		}
-		inputChar = ' '; //reset
+	//create corridor instance
 
+	//IF LAST TURN WAS A LEFT, WE CAN STILL DO THAT FUCKING 180 THING!! WE NEED CLASSESS
+	//WHEN YOU WAKE UP THE FIRST THING WE NEED TO DO IS CLASSES!!
+	//left and right turns can be automated
+
+	Serial.println("In Corridor..");
+	char inputChar;
+	while ((inputChar != 'stop'))
+	{
+		while (line_detection() != "WALL") {
+			//zumo_direction = averageHeading(); //set the direction the zumo is currently facing
+			motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
+			if (Serial.available() > 0)
+			{
+				inputChar = Serial.read();
+			}
+			switch (inputChar)
+			{
+			case 'stop': case 'STOP': digitalWrite(LED_PIN, HIGH); motors.setLeftSpeed(0); motors.setRightSpeed(0); delay(REVERSE_DURATION); break;
+			case 'r': case 'R': outside_room(); break;
+			case 'c': case 'C': corridor(); break;
+			}
+			inputChar = ' '; //reset
+
+		}
 	}
 	Serial.println("I've hit a corner! Manual Navigation Initiated. Press 'Complete' when I'm back on route.");
 	manual_control();
@@ -215,25 +221,26 @@ bool borderDetect() {
 	if (sensor_values[0] > QTR_THRESHOLD)
 	{
 		// if leftmost sensor detects line, reverse and turn to the right
-		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+	/*	motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		rotate(fmod(averageHeading() + 180, 360));
-		motors.setSpeeds(50, 50);
+		rotate(fmod(averageHeading() + 180, 360)); //does a 90
+		motors.setSpeeds(50, 50);*/
 
 		return true;
 	}
 	else if (sensor_values[5] > QTR_THRESHOLD)
 	{
-		motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
+		/*motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
 		delay(REVERSE_DURATION);
-		rotate(fmod(averageHeading() + 180, 360));
-		motors.setSpeeds(50, 50);
+		rotate(fmod(averageHeading() + 180, 360)); //does a 90
+		motors.setSpeeds(50, 50);*/
 
 		return true;
 	}
 	return false;
 
 }
+
 
 bool scan() {
 	//taken from ultrasonic_sensor_test example
@@ -249,29 +256,20 @@ bool scan() {
 	digitalWrite(trigPin, HIGH);
 	delayMicroseconds(10);
 	digitalWrite(trigPin, LOW);
-	bool objDetected = false;
 	// Read the signal from the sensor: a HIGH pulse whose
 	// duration is the time (in microseconds) from the sending
 	// of the ping to the reception of its echo off of an object.
 	pinMode(echoPin, INPUT);
 	
-
-	
-	//4 turns does a 360
-	for (int i = 0; i < 4;i++) {
-
 		duration = pulseIn(echoPin, HIGH);
 		// convert the time into a distance
 		cm = microsecondsToCentimeters(duration);
 		Serial.println(cm);
-
-		rotate(fmod(averageHeading() + 90, 360)); //does a 90
-		if ((cm <= 10) && (cm > 0))
+		if (cm <= 10)
 		{
-			objDetected = true;
+			return true;
 		}
-	}
-	return objDetected;
+	return false;
 
 }
 
@@ -295,22 +293,43 @@ long microsecondsToCentimeters(long microseconds)
 void outside_room() {
 
 	rotate(fmod(averageHeading() + 90, 360));
+	bool lineDetected = false;
+	for (int i = 0; i < 3; i++) {
+		motors.setSpeeds(50, 50);
+		if (line_detection()) {
+			lineDetected = true;
+		}
+	}
+	for (int i = 0; i < 3; i++) {
+		motors.setSpeeds(-50, -50);
+	}
 
-	borderDetect();  //first border detect to check if line is behind us
+	// use the line detected code for every corner
+	if (lineDetected = true) {
+		rotate(fmod(averageHeading() + 180, 360)); //does a 90
+	}
 	while (!borderDetect()) { //crawl forward until second border so we can position ourselves at the back of the room for good scan range.
-			motors.setSpeeds(50, 50);
 	}
+	if (borderDetect()) {
+		rotate(fmod(averageHeading() + 180, 360));
+	}
+	
 		moveandscan();
-
 }
-bool moveandscan() {
-	if (scan()) {
-		Serial.println("Object found here! Please send someone to collect him!");
-	}
-	else {
-		Serial.println("No one detected in room :);");
-	}
 
+
+bool moveandscan() {
+				//4 turns does a 360
+	for (int i = 0; i < 4;i++) {
+		if (scan()) {
+			Serial.println("Object found here! Please send someone to collect him!");
+		}
+		else {
+			Serial.println("No one detected in room.");
+		}
+		rotate(fmod(averageHeading() + 90, 360)); //does a 90
+	}
+	rotate(fmod(averageHeading() + 180, 360));
 }
 
 void sensor_callibration() {
