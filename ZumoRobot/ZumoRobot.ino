@@ -27,7 +27,8 @@ int lastMove, lastRoom;
  * originally I attempted to split this out into .h/.cpp files (whilst I was working within Visual Micro) - however this proved to be difficult when I 
  * switched over to Arduino IDE.*/
  //Corridor.h
-Class Corridor {
+ 
+class Corridor {
 private:
   int corr_id;
   bool sub;
@@ -42,7 +43,6 @@ public:
   void set_current_direction(int direction);
   int get_current_direction();
 };
-
 //Corridor.cpp
 Corridor::Corridor() {}
 int Corridor::get_corr_id() {
@@ -74,7 +74,7 @@ private:
   int id;
   bool objects;
   int corr_id;
-  int door_direction; 1 = left, 0 = right.
+  int door_direction; //1 = left, 0 = right.
 public:
   Room();
   //getters
@@ -126,7 +126,7 @@ Vector<Corridor> corridors;
 
 // this might need to be tuned for different lighting conditions, surfaces, etc.
 #define QTR_THRESHOLD  300 // microseconds
-#define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
+//#define ABOVE_LINE(sensor)((sensor) > QTR_THRESHOLD)
 // Speed/duration settings
 #define SPEED           150 // Maximum motor speed when going straight; variable speed when turning
 #define TURN_BASE_SPEED 100 // Base speed when turning (added to variable speed)
@@ -162,13 +162,14 @@ template <typename T> float heading(LSM303::vector<T> v)
     angle += 360;
   return angle;
 }
+
 void setup()
 {
   lastRoom = 0;
   currentCorridor = 0;
   Serial.begin(9600);
   Serial.println("Press button for Callibration!");
- // button.waitForButton();
+  button.waitForButton();
   initialise_compass();
   Serial.println("Place zumo over black line for sensor callibration.");
   button.waitForButton();
@@ -183,7 +184,8 @@ void loop()
 {
 }
 
-  
+
+ //This function gets the left or right from the previous corner/corridor. (Required when barring the user from going in a direction)
 int get_previous_move(){
  
   for (int i = 0; i < corridors.size(); ++i)
@@ -193,6 +195,8 @@ int get_previous_move(){
     }
     }
   }
+
+  //this function returns the current left or right for the corridor
 int get_current_move(){
   for (int i = 0; i < corridors.size(); ++i)
   {
@@ -202,6 +206,7 @@ int get_current_move(){
     }
   }
 
+//returns whether the corridor is a subcorridor or standard
 bool is_corridor_sub(){
   for (int i = 0; i < corridors.size(); ++i)
   {
@@ -211,16 +216,16 @@ bool is_corridor_sub(){
     }
   }
 
+
+//this function is used to differentiate whether the zumo is at a wall, or just going left and right and needs a correction
 String line_detection() {
-if (checkIfWall()){
+if (check_for_wall()){
   return "WALL";
 }
   else
   {
     if (sensor_values[0] > QTR_THRESHOLD)
     {
-      //Serial.println(sensor_values[0]);
-      //buzzer.playNote(NOTE_G(3), 200, 15);
       // if leftmost sensor detects line, reverse and turn to the right
       motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
       delay(REVERSE_DURATION);
@@ -231,7 +236,6 @@ if (checkIfWall()){
     }
     else if (sensor_values[5] > QTR_THRESHOLD)
     {
-      // buzzer.playNote(NOTE_G(2), 200, 15);
       // if rightmost sensor detects line, reverse and turn to the left
       motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
       delay(REVERSE_DURATION);
@@ -243,16 +247,18 @@ if (checkIfWall()){
   }
   return "N/A";
 }
-  bool checkIfWall() {
+
+//if sensors other than the far left and right are above the threshold it would indicate we are on a wall. 
+  bool check_for_wall() {
   motors.setSpeeds(100, 100);
   reflectanceSensors.read(sensor_values);
+  //it's a given one of these values are above the qtr threshold, but we need to check if it's just the left side, or the entire zumo
   if ((sensor_values[0] > QTR_THRESHOLD) || (sensor_values[5]  > QTR_THRESHOLD))
   {
-    delay(50);
-    reflectanceSensors.read(sensor_values);
-    delay(5);
-    if ((sensor_values[1]) > QTR_THRESHOLD) || (sensor_values[2]) > QTR_THRESHOLD) || (sensor_values[3]) > QTR_THRESHOLD) || (sensor_values[4])) > QTR_THRESHOLD))
-    {
+    delay(100); //pause the zumo to read the values in again
+    reflectanceSensors.read(sensor_values); 
+    if ((sensor_values[1] > QTR_THRESHOLD) || (sensor_values[2] > QTR_THRESHOLD) || (sensor_values[3] > QTR_THRESHOLD) || (sensor_values[4] > QTR_THRESHOLD))
+    { //if any of the middle sensors are above the QTR, stop the zumo. 
       motors.setSpeeds(0, 0);
       motors.setSpeeds(-REVERSE_SPEED, -REVERSE_SPEED);
       delay(REVERSE_DURATION);
@@ -263,10 +269,7 @@ if (checkIfWall()){
   return false;
 }
 
-
-//OPTIMIZE RETURN PATH: 
-//STORE THE DELAY FOR THE CORRIDOR 1, NOTE DOWN IF ITS LEFT OR RIGHT, ON RETURN REVERSE THIS
-
+//Manual Controls
   void manual_control()
   {
     char inputChar;
@@ -288,7 +291,7 @@ if (checkIfWall()){
         case 'r': case 'R': outside_room(); break;
         case 'z': case 'Z': corridor(true); break;
         case 'x': case 'X': motors.setSpeeds(0,0); break;
-        case 'l': case 'L': status_report();; break;
+        case 'l': case 'L': status_report();; break;  //reports current rooms/corridors entered
 
       }
       motors.setSpeeds(0,0);
@@ -311,6 +314,8 @@ void status_report(){
      Serial.println(String(rooms[i].get_door_direction()));
   }
 }
+
+//if we are in a subcorridor, the functionality for the 'complete' options xhanges
 void complete(){
     if (is_corridor_sub()){
         Serial.println(currentCorridor);
@@ -320,16 +325,18 @@ void complete(){
          corridor(false);
      }
   }
+
+  //creates a corridor instance, and pushes it to the vector
 void createCorridorInstance(bool sub, int curr_dir, int prev_dir){
   Corridor c;
   c.set_corr_id(currentCorridor+1);
   c.set_sub(sub);
   c.set_current_direction(curr_dir);
   corridors.push_back(c);
-//  Serial.println(c.get_corr_id());
   currentCorridor =  currentCorridor + 1;
 }
 
+  //creates a room instance, and pushes it to the vector
 void createRoomInstance(bool detected, int direction){
   Room r;
   r.set_id(lastRoom+1);
@@ -434,6 +441,7 @@ long microsecondsToCentimeters(long microseconds)
   return microseconds / 29 / 2;
 }
 
+//checks if there is a line infront/behind the zumo to perform 180 turns.
 bool lookForLine() {
   bool temp = false;
   for (int i = 0; i < 3; i++) {
@@ -452,6 +460,8 @@ bool lookForLine() {
   }
   return temp;
 }
+
+//function when travelling down a sub corridor
 void sub_corridor() {
   //go forward until we see a wall 
         while (line_detection() != "WALL") {
@@ -464,7 +474,7 @@ void sub_corridor() {
           }
         }
       Serial.println("End of subcorridor, moving to the end.");
-      rotate(fmod(averageHeading() + 180, 360)); //does a 90
+      rotate(fmod(averageHeading() + 180, 360)); //does a 180
               while (line_detection() != "WALL") {
     motors.setSpeeds(FORWARD_SPEED, FORWARD_SPEED);
    }
@@ -489,12 +499,13 @@ void sub_corridor() {
      if (inputChar == prev){
       switch (inputChar)
       {
-        case 'a': case 'A': rotate(fmod(averageHeading() - 93, 360));lastMove = 1;break; //aprox left
-        case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));lastMove = 0;break; //approx right
+        case 'a': case 'A': rotate(fmod(averageHeading() - 93, 360));lastMove = 1;break;
+        case 'd': case 'D': rotate(fmod(averageHeading() + 93, 360));lastMove = 0;break; 
       }
       corridor(false); 
      }       
   }
+
 void outside_room() {
   int direction = 1; //direction of the door, default turn value is left so we set to 1.
   rotate(fmod(averageHeading() + 90, 360));
@@ -505,6 +516,7 @@ void outside_room() {
     moveandscan(direction);
 }
 
+//moves forward and scans the room for objects
 bool moveandscan(int direction) {
         //4 turns does a 360
   motors.setLeftSpeed(200);
@@ -630,7 +642,8 @@ float relativeHeading(float heading_from, float heading_to)
   return relative_heading;
 }
 
-
+//this function rotates the zumo based on degrees passed in by the user (i.e. 90)
+//this was heavily inspired from the compass example
 void rotate(int degrees) //rotate to an angle based on compass
 {
   int speed;
