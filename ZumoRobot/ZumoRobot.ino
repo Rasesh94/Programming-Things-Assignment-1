@@ -534,11 +534,12 @@ bool moveandscan(int direction) {
       }
   if (foundsomeone){
     createRoomInstance(foundsomeone, direction);
-    Serial.println("OBJECT/PERSON DETECTED in room" + String(lastRoom) + " corridor: " + String(currentCorridor) + "Please send someone to collect him!");
+    Serial.println("OBJECT/PERSON DETECTED in room: " + String(lastRoom) + " corridor: " + String(currentCorridor) + "Please send someone to collect him!");
     manual_control();
   }
     else {
-      Serial.println("Nothing detected.");
+      createRoomInstance(false, direction);
+      Serial.println("Nothing detected in room: "+ String(lastRoom) + " corridor: " + String(currentCorridor));
     }    
 }
 
